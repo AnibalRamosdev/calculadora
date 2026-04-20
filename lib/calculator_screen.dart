@@ -18,23 +18,21 @@ class _CalculadoraHomeState extends State<CalculadoraHome> {
         _pantalla = "0";
       }
       else if (texto == "⌫") {
-        if (_pantalla.length > 1) {
-          _pantalla = _pantalla.substring(0, _pantalla.length - 1);
-        } else {
-          _pantalla = "0";
-        }
+        _pantalla = (_pantalla.length > 1) ? _pantalla.substring(0, _pantalla.length - 1) : "0";
       }
       else if (texto == "=") {
         _pantalla = CalculatorLogic.calcular(_pantalla);
       }
       else if (texto == "+/-") {
         if (_pantalla != "0" && _pantalla != "Error") {
-          if (_pantalla.startsWith("-")) {
-            _pantalla = _pantalla.substring(1);
-          } else {
-            _pantalla = "-$_pantalla";
-          }
+          _pantalla = _pantalla.startsWith("-") ? _pantalla.substring(1) : "-$_pantalla";
         }
+      }
+      else if (texto == "DEG" || texto == "RAD") {
+        CalculatorLogic.esGrados = !CalculatorLogic.esGrados;
+      }
+      else if (["sin", "cos", "tan", "log"].contains(texto)) {
+        _pantalla = (_pantalla == "0") ? "$texto(" : _pantalla + "$texto(";
       }
       else {
         if (_pantalla == "0" || _pantalla == "Error") {
@@ -53,6 +51,7 @@ class _CalculadoraHomeState extends State<CalculadoraHome> {
       body: SafeArea(
         child: Column(
           children: [
+            // Pantalla
             Expanded(
               child: Container(
                 alignment: Alignment.bottomRight,
@@ -67,6 +66,8 @@ class _CalculadoraHomeState extends State<CalculadoraHome> {
                 ),
               ),
             ),
+
+            // Selector de Modo
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 15),
               child: Row(
@@ -78,12 +79,17 @@ class _CalculadoraHomeState extends State<CalculadoraHome> {
                 ],
               ),
             ),
+
+            // Teclado
             Column(
               children: [
-                if (_modoActual == "Scientific")
-                  _crearFila(["sin", "cos", "tan", "log"]),
+                if (_modoActual == "Scientific") ...[
+                  _crearFila([CalculatorLogic.esGrados ? "DEG" : "RAD", "(", ")", "log"]),
+                  _crearFila(["sin", "cos", "tan", "÷"]),
+                ],
+                if (_modoActual == "Basic")
+                  _crearFila(["AC", "⌫", "%", "÷"]),
 
-                _crearFila(["AC", "⌫", "%", "÷"]),
                 _crearFila(["7", "8", "9", "×"]),
                 _crearFila(["4", "5", "6", "-"]),
                 _crearFila(["1", "2", "3", "+"]),
@@ -122,15 +128,15 @@ class _CalculadoraHomeState extends State<CalculadoraHome> {
 
   Widget _botonPersonalizado(String texto) {
     Color colorFondo = const Color(0xFF212121);
-    if ("AC%÷×-+=⌫".contains(texto) || texto == "+/-") {
+    // Color morado para botones de acción
+    if ("AC%÷×-+=⌫()".contains(texto) || texto == "+/-" || texto == "DEG" || texto == "RAD") {
       colorFondo = const Color(0xFF5203D5);
     } else if ("sin cos tan log".contains(texto)) {
       colorFondo = const Color(0xFF1A1A1A);
     }
 
     return SizedBox(
-      width: 80,
-      height: 80,
+      width: 80, height: 80,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: colorFondo,

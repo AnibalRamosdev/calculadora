@@ -10,7 +10,6 @@ class CalculadoraApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Mi Calculadora Figma',
       theme: ThemeData.dark(),
       home: const CalculadoraHome(),
     );
