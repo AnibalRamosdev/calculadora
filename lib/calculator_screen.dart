@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'calculator_logic.dart';
 
 class CalculadoraHome extends StatefulWidget {
@@ -11,30 +13,39 @@ class CalculadoraHome extends StatefulWidget {
 class _CalculadoraHomeState extends State<CalculadoraHome> {
   String _pantalla = "0";
   String _modoActual = "Basic";
+  File? _imagenFondo;
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _seleccionarImagen() async {
+    try {
+      final XFile? imagenSeleccionada = await _picker.pickImage(source: ImageSource.gallery);
+      if (imagenSeleccionada != null) {
+        setState(() {
+          _imagenFondo = File(imagenSeleccionada.path);
+        });
+      }
+    } catch (e) {
+      print("Error al seleccionar imagen: $e");
+    }
+  }
 
   void _presionarBoton(String texto) {
     setState(() {
       if (texto == "AC") {
         _pantalla = "0";
-      }
-      else if (texto == "⌫") {
+      } else if (texto == "⌫") {
         _pantalla = (_pantalla.length > 1) ? _pantalla.substring(0, _pantalla.length - 1) : "0";
-      }
-      else if (texto == "=") {
+      } else if (texto == "=") {
         _pantalla = CalculatorLogic.calcular(_pantalla);
-      }
-      else if (texto == "+/-") {
+      } else if (texto == "DEG" || texto == "RAD") {
+        CalculatorLogic.esGrados = !CalculatorLogic.esGrados;
+      } else if (["sin", "cos", "tan", "log"].contains(texto)) {
+        _pantalla = (_pantalla == "0") ? "$texto(" : _pantalla + "$texto(";
+      } else if (texto == "+/-") {
         if (_pantalla != "0" && _pantalla != "Error") {
           _pantalla = _pantalla.startsWith("-") ? _pantalla.substring(1) : "-$_pantalla";
         }
-      }
-      else if (texto == "DEG" || texto == "RAD") {
-        CalculatorLogic.esGrados = !CalculatorLogic.esGrados;
-      }
-      else if (["sin", "cos", "tan", "log"].contains(texto)) {
-        _pantalla = (_pantalla == "0") ? "$texto(" : _pantalla + "$texto(";
-      }
-      else {
+      } else {
         if (_pantalla == "0" || _pantalla == "Error") {
           _pantalla = texto;
         } else {
@@ -48,58 +59,72 @@ class _CalculadoraHomeState extends State<CalculadoraHome> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Pantalla
-            Expanded(
-              child: Container(
-                alignment: Alignment.bottomRight,
-                padding: const EdgeInsets.all(24),
-                child: SingleChildScrollView(
-                  reverse: true,
-                  scrollDirection: Axis.horizontal,
-                  child: Text(
-                    _pantalla,
-                    style: const TextStyle(fontSize: 70, color: Colors.white, fontWeight: FontWeight.w300),
+      body: Stack(
+        children: [
+          if (_imagenFondo != null)
+            Positioned.fill(
+              child: Image.file(
+                _imagenFondo!,
+                fit: BoxFit.cover,
+                color: Colors.black.withOpacity(0.4),
+                colorBlendMode: BlendMode.darken,
+              ),
+            ),
+          SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    alignment: Alignment.bottomRight,
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      _pantalla,
+                      style: const TextStyle(fontSize: 70, color: Colors.white, fontWeight: FontWeight.w300),
+                    ),
                   ),
                 ),
-              ),
-            ),
-
-            // Selector de Modo
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _botonCambioModo("Basic"),
-                  const SizedBox(width: 40),
-                  _botonCambioModo("Scientific"),
-                ],
-              ),
-            ),
-
-            // Teclado
-            Column(
-              children: [
-                if (_modoActual == "Scientific") ...[
-                  _crearFila([CalculatorLogic.esGrados ? "DEG" : "RAD", "(", ")", "log"]),
-                  _crearFila(["sin", "cos", "tan", "÷"]),
-                ],
-                if (_modoActual == "Basic")
-                  _crearFila(["AC", "⌫", "%", "÷"]),
-
-                _crearFila(["7", "8", "9", "×"]),
-                _crearFila(["4", "5", "6", "-"]),
-                _crearFila(["1", "2", "3", "+"]),
-                _crearFila(["0", ".", "+/-", "="]),
-                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          _botonCambioModo("Basic"),
+                          const SizedBox(width: 20),
+                          _botonCambioModo("Scientific"),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.image, color: Color(0xFF5203D5)),
+                        onPressed: _seleccionarImagen,
+                      )
+                    ],
+                  ),
+                ),
+                _construirTeclado(),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _construirTeclado() {
+    return Column(
+      children: [
+        if (_modoActual == "Scientific") ...[
+          _crearFila([CalculatorLogic.esGrados ? "DEG" : "RAD", "(", ")", "log"]),
+          _crearFila(["sin", "cos", "tan", "÷"]),
+        ],
+        if (_modoActual == "Basic") _crearFila(["AC", "⌫", "%", "÷"]),
+        _crearFila(["7", "8", "9", "×"]),
+        _crearFila(["4", "5", "6", "-"]),
+        _crearFila(["1", "2", "3", "+"]),
+        _crearFila(["0", ".", "+/-", "="]),
+        const SizedBox(height: 10),
+      ],
     );
   }
 
@@ -107,47 +132,39 @@ class _CalculadoraHomeState extends State<CalculadoraHome> {
     bool seleccionado = _modoActual == nombre;
     return GestureDetector(
       onTap: () => setState(() => _modoActual = nombre),
-      child: Column(
-        children: [
-          Text(nombre, style: TextStyle(fontSize: 18, color: seleccionado ? const Color(0xFF5203D5) : Colors.grey[600], fontWeight: seleccionado ? FontWeight.bold : FontWeight.normal)),
-          if (seleccionado) Container(margin: const EdgeInsets.only(top: 4), height: 2, width: 30, color: const Color(0xFF5203D5)),
-        ],
+      child: Text(
+        nombre,
+        style: TextStyle(
+          fontSize: 18,
+          color: seleccionado ? const Color(0xFF5203D5) : Colors.grey,
+          fontWeight: seleccionado ? FontWeight.bold : FontWeight.normal,
+        ),
       ),
     );
   }
 
   Widget _crearFila(List<String> botones) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: botones.map((texto) => _botonPersonalizado(texto)).toList()
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: botones.map((texto) => _botonPersonalizado(texto)).toList(),
     );
   }
 
   Widget _botonPersonalizado(String texto) {
-    Color colorFondo = const Color(0xFF212121);
-    // Color morado para botones de acción
-    if ("AC%÷×-+=⌫()".contains(texto) || texto == "+/-" || texto == "DEG" || texto == "RAD") {
-      colorFondo = const Color(0xFF5203D5);
-    } else if ("sin cos tan log".contains(texto)) {
-      colorFondo = const Color(0xFF1A1A1A);
-    }
-
-    return SizedBox(
-      width: 80, height: 80,
+    return Container(
+      margin: const EdgeInsets.all(4),
+      width: 75,
+      height: 75,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: colorFondo,
+          backgroundColor: "AC%÷×-+=⌫()DEG RAD".contains(texto) || texto == "+/-"
+              ? const Color(0xFF5203D5)
+              : const Color(0xFF212121).withOpacity(0.8),
           shape: const CircleBorder(),
-          elevation: 0,
           padding: EdgeInsets.zero,
         ),
         onPressed: () => _presionarBoton(texto),
-        child: texto == "⌫"
-            ? const Icon(Icons.backspace_outlined, color: Colors.white, size: 24)
-            : Text(texto, style: TextStyle(fontSize: texto.length > 2 ? 18 : 28, color: Colors.white)),
+        child: Text(texto, style: const TextStyle(fontSize: 22, color: Colors.white)),
       ),
     );
   }

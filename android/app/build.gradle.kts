@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // El plugin de Flutter debe aplicarse después de los de Android y Kotlin
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -20,11 +20,13 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // ID único de tu aplicación
         applicationId = "com.example.android_proyect"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+
+        // --- CAMBIO CLAVE PARA IMAGE_PICKER ---
+        minSdk = 21
+        // --------------------------------------
+
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -32,8 +34,7 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Configuración de firma para la versión de lanzamiento
             signingConfig = signingConfigs.getByName("debug")
         }
     }
