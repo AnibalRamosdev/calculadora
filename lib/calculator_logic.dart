@@ -9,8 +9,7 @@ class CalculatorLogic {
           .replaceAll('÷', '/')
           .replaceAll('x', '*');
 
-      // 2. LÓGICA DE PORCENTAJE RELATIVO (Ej: 100 - 10%)
-      // Esta expresión regular busca: Numero, Operador (+ o -), y otro Numero con %
+      // 2. Lógica de porcentaje relativo (Ej: 100 - 10%)
       final regExpRelativo = RegExp(r'(\d+\.?\d*)\s*([+\-])\s*(\d+\.?\d*)%');
 
       exp = exp.replaceAllMapped(regExpRelativo, (match) {
@@ -18,27 +17,24 @@ class CalculatorLogic {
         String operador = match.group(2)!;
         double porcentaje = double.parse(match.group(3)!);
 
-        // Calculamos el porcentaje basado en el primer número
         double valorCalculado = (numBase * porcentaje) / 100;
         return "$numBase $operador $valorCalculado";
       });
 
-      // 3. LÓGICA DE PORCENTAJE SIMPLE (Ej: 50% * 2)
-      // Si queda algún % suelto, lo dividimos por 100
+      // 3. Porcentaje simple (Ej: 50% -> 0.5)
       exp = exp.replaceAll('%', '/100');
 
-      // 4. PROCESAR CON LA LIBRERÍA
+      // 4. Procesar con la librería math_expressions
       Parser p = Parser();
       Expression expression = p.parse(exp);
       ContextModel cm = ContextModel();
       double eval = expression.evaluate(EvaluationType.REAL, cm);
 
-      // 5. FORMATEO FINAL
+      // 5. Formateo de salida
       if (eval % 1 == 0) {
         return eval.toInt().toString();
       } else {
-        // Redondeo para evitar errores de precisión (ej: 0.000000004)
-        String res = eval.toStringAsFixed(10);
+        String res = eval.toStringAsFixed(8);
         return res.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
       }
     } catch (e) {
