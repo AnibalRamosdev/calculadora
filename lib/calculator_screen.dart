@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:flutter/services.dart';
+import 'dart:io'; // IMPORTANTE para manejar la imagen de fondo
 import 'calculator_logic.dart';
 
 class CalculadoraHome extends StatefulWidget {
   const CalculadoraHome({super.key});
-
   @override
   State<CalculadoraHome> createState() => _CalculadoraHomeState();
 }
@@ -13,96 +12,52 @@ class CalculadoraHome extends StatefulWidget {
 class _CalculadoraHomeState extends State<CalculadoraHome> {
   String _pantalla = "0";
   String _modoActual = "Basic";
-  File? _imagenFondo;
-  final ImagePicker _picker = ImagePicker();
+  File? _imagenFondo; // Variable para guardar el fondo elegido
 
-  Future<void> _seleccionarImagen() async {
-    try {
-      final XFile? imagenSeleccionada = await _picker.pickImage(source: ImageSource.gallery);
-      if (imagenSeleccionada != null) {
-        setState(() {
-          _imagenFondo = File(imagenSeleccionada.path);
-        });
-      }
-    } catch (e) {
-      print("Error al seleccionar imagen: $e");
-    }
-  }
+  final Color _colorFondoBase = Colors.black;
+  final Color _colorBotonNum = const Color(0xFF17171C).withOpacity(0.8);
+  final Color _colorBotonAccion = const Color(0xFF4B5EFC);
 
   void _presionarBoton(String texto) {
+    HapticFeedback.lightImpact();
     setState(() {
-      if (texto == "AC") {
-        _pantalla = "0";
-      } else if (texto == "⌫") {
-        _pantalla = (_pantalla.length > 1) ? _pantalla.substring(0, _pantalla.length - 1) : "0";
-      } else if (texto == "=") {
-        _pantalla = CalculatorLogic.calcular(_pantalla);
-      } else if (texto == "DEG" || texto == "RAD") {
-        CalculatorLogic.esGrados = !CalculatorLogic.esGrados;
-      } else if (["sin", "cos", "tan", "log"].contains(texto)) {
-        _pantalla = (_pantalla == "0") ? "$texto(" : _pantalla + "$texto(";
-      } else if (texto == "+/-") {
-        if (_pantalla != "0" && _pantalla != "Error") {
-          _pantalla = _pantalla.startsWith("-") ? _pantalla.substring(1) : "-$_pantalla";
-        }
-      } else {
-        if (_pantalla == "0" || _pantalla == "Error") {
-          _pantalla = texto;
-        } else {
-          _pantalla += texto;
-        }
-      }
+      if (texto == "AC") { _pantalla = "0"; }
+      else if (texto == "=") { _pantalla = CalculatorLogic.calcular(_pantalla); }
+      else { _pantalla = (_pantalla == "0") ? texto : _pantalla + texto; }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: _colorFondoBase,
+      // Usamos un Stack para poner la imagen debajo de todo
       body: Stack(
         children: [
+          // 1. CAPA DE FONDO (Imagen de personalización)
           if (_imagenFondo != null)
             Positioned.fill(
-              child: Image.file(
-                _imagenFondo!,
-                fit: BoxFit.cover,
-                color: Colors.black.withOpacity(0.4),
-                colorBlendMode: BlendMode.darken,
-              ),
+              child: Image.file(_imagenFondo!, fit: BoxFit.cover),
             ),
-          SafeArea(
-            child: Column(
+
+          // 2. CAPA DE LA INTERFAZ
+          Scaffold(
+            backgroundColor: _imagenFondo == null ? _colorFondoBase : Colors.transparent,
+            drawer: _buildMenu(),
+            appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
+            body: Column(
               children: [
                 Expanded(
-                  child: Container(
-                    alignment: Alignment.bottomRight,
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      _pantalla,
-                      style: const TextStyle(fontSize: 70, color: Colors.white, fontWeight: FontWeight.w300),
-                    ),
-                  ),
+                    child: Container(
+                        alignment: Alignment.bottomRight,
+                        padding: const EdgeInsets.all(20),
+                        child: Text(
+                            _pantalla,
+                            style: const TextStyle(fontSize: 80, color: Colors.white, fontWeight: FontWeight.w200)
+                        )
+                    )
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          _botonCambioModo("Basic"),
-                          const SizedBox(width: 20),
-                          _botonCambioModo("Scientific"),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.image, color: Color(0xFF5203D5)),
-                        onPressed: _seleccionarImagen,
-                      )
-                    ],
-                  ),
-                ),
-                _construirTeclado(),
+                _buildTeclado(),
               ],
             ),
           ),
@@ -111,61 +66,85 @@ class _CalculadoraHomeState extends State<CalculadoraHome> {
     );
   }
 
-  Widget _construirTeclado() {
-    return Column(
-      children: [
-        if (_modoActual == "Scientific") ...[
-          _crearFila([CalculatorLogic.esGrados ? "DEG" : "RAD", "(", ")", "log"]),
-          _crearFila(["sin", "cos", "tan", "÷"]),
+  // --- EL MENU LATERAL ---
+  Widget _buildMenu() {
+    return Drawer(
+      backgroundColor: const Color(0xFF17171C),
+      child: Column(
+        children: [
+          const DrawerHeader(child: Text("DISEÑO FIGMA", style: TextStyle(color: Color(0xFF4B5EFC), fontSize: 24))),
+          _itemMenu(Icons.calculate, "Calculadora", "/"),
+          _itemMenu(Icons.palette, "Personalización", "/personalizar"),
+          _itemMenu(Icons.grid_view, "Modelos", "/modelos"),
         ],
-        if (_modoActual == "Basic") _crearFila(["AC", "⌫", "%", "÷"]),
-        _crearFila(["7", "8", "9", "×"]),
-        _crearFila(["4", "5", "6", "-"]),
-        _crearFila(["1", "2", "3", "+"]),
-        _crearFila(["0", ".", "+/-", "="]),
-        const SizedBox(height: 10),
-      ],
-    );
-  }
-
-  Widget _botonCambioModo(String nombre) {
-    bool seleccionado = _modoActual == nombre;
-    return GestureDetector(
-      onTap: () => setState(() => _modoActual = nombre),
-      child: Text(
-        nombre,
-        style: TextStyle(
-          fontSize: 18,
-          color: seleccionado ? const Color(0xFF5203D5) : Colors.grey,
-          fontWeight: seleccionado ? FontWeight.bold : FontWeight.normal,
-        ),
       ),
     );
   }
 
-  Widget _crearFila(List<String> botones) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: botones.map((texto) => _botonPersonalizado(texto)).toList(),
+  // --- EL TECLADO CON MODOS ---
+  Widget _buildTeclado() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+          color: const Color(0xFF17171C).withOpacity(0.9), // Un poco transparente para ver el fondo
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30))
+      ),
+      child: Column(
+        children: [
+          if (_modoActual == "Scientific") ...[
+            _crearFila(["sin", "cos", "tan", "log"]),
+            _crearFila(["DEG", "(", ")", "√"]),
+            const Divider(color: Colors.white10),
+          ],
+          _crearFila(["AC", "⌫", "%", "÷"]),
+          _crearFila(["7", "8", "9", "×"]),
+          _crearFila(["4", "5", "6", "-"]),
+          _crearFila(["1", "2", "3", "+"]),
+          _crearFila(["0", ".", "+/-", "="]),
+        ],
+      ),
     );
   }
 
-  Widget _botonPersonalizado(String texto) {
+  Widget _crearFila(List<String> etiquetas) {
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: etiquetas.map((e) => _buildBoton(e)).toList());
+  }
+
+  Widget _buildBoton(String t) {
     return Container(
       margin: const EdgeInsets.all(4),
-      width: 75,
-      height: 75,
+      width: 70, height: 70,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: "AC%÷×-+=⌫()DEG RAD".contains(texto) || texto == "+/-"
-              ? const Color(0xFF5203D5)
-              : const Color(0xFF212121).withOpacity(0.8),
-          shape: const CircleBorder(),
-          padding: EdgeInsets.zero,
+            backgroundColor: (t == "=" || t == "+") ? _colorBotonAccion : _colorBotonNum,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
         ),
-        onPressed: () => _presionarBoton(texto),
-        child: Text(texto, style: const TextStyle(fontSize: 22, color: Colors.white)),
+        onPressed: () => _presionarBoton(t),
+        child: Text(t, style: const TextStyle(color: Colors.white, fontSize: 20)),
       ),
+    );
+  }
+
+  // --- NAVEGACIÓN INTELIGENTE ---
+  Widget _itemMenu(IconData icono, String titulo, String ruta) {
+    return ListTile(
+      leading: Icon(icono, color: Colors.white),
+      title: Text(titulo, style: const TextStyle(color: Colors.white)),
+      onTap: () async {
+        Navigator.pop(context); // Cierra el menú primero
+
+        final resultado = await Navigator.pushNamed(context, ruta);
+
+        if (resultado != null) {
+          setState(() {
+            if (ruta == "/modelos") {
+              _modoActual = resultado.toString();
+            } else if (ruta == "/personalizar") {
+              _imagenFondo = resultado as File; // Recibe la foto de la otra pantalla
+            }
+          });
+        }
+      },
     );
   }
 }

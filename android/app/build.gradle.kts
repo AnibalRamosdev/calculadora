@@ -24,7 +24,7 @@ android {
         applicationId = "com.example.android_proyect"
 
         // --- CAMBIO CLAVE PARA IMAGE_PICKER ---
-        minSdk = 21
+        minSdk = flutter.minSdkVersion
         // --------------------------------------
 
         targetSdk = flutter.targetSdkVersion

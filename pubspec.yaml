@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  math_expressions: ^2.6.0 # <--- Para que funcione la lógica
+  math_expressions: ^3.1.0 # <--- Para que funcione la lógica
   image_picker: ^1.2.1
 
 dev_dependencies:
