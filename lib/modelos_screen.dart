@@ -8,8 +8,7 @@ class PantallaModelos extends StatefulWidget {
 }
 
 class _PantallaModelosState extends State<PantallaModelos> {
-  // Esta variable guarda cuál hemos pinchado antes de darle al botón de confirmar
-  String temaSeleccionado = "Primavera";
+  String temaSeleccionado = "Normal";
 
   @override
   Widget build(BuildContext context) {
@@ -23,13 +22,6 @@ class _PantallaModelosState extends State<PantallaModelos> {
       ),
       body: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              "Selecciona una estación para cambiar el diseño",
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-          ),
           Expanded(
             child: GridView.count(
               crossAxisCount: 2,
@@ -37,6 +29,7 @@ class _PantallaModelosState extends State<PantallaModelos> {
               mainAxisSpacing: 20,
               crossAxisSpacing: 20,
               children: [
+                _tarjetaEstacion("Normal", Icons.calculate, Colors.grey),
                 _tarjetaEstacion("Primavera", Icons.local_florist, Colors.green),
                 _tarjetaEstacion("Verano", Icons.wb_sunny, Colors.orange),
                 _tarjetaEstacion("Otoño", Icons.park, Colors.brown),
@@ -44,7 +37,6 @@ class _PantallaModelosState extends State<PantallaModelos> {
               ],
             ),
           ),
-          // BOTÓN DE APLICAR
           Padding(
             padding: const EdgeInsets.all(30.0),
             child: SizedBox(
@@ -55,14 +47,8 @@ class _PantallaModelosState extends State<PantallaModelos> {
                   backgroundColor: const Color(0xFF4B5EFC),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
-                onPressed: () {
-                  // IMPORTANTE: Aquí devolvemos el nombre a la pantalla principal
-                  Navigator.pop(context, temaSeleccionado);
-                },
-                child: const Text(
-                  "Aplicar Diseño",
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                onPressed: () => Navigator.pop(context, temaSeleccionado),
+                child: const Text("Aplicar Diseño", style: TextStyle(color: Colors.white, fontSize: 18)),
               ),
             ),
           ),
@@ -71,42 +57,22 @@ class _PantallaModelosState extends State<PantallaModelos> {
     );
   }
 
-  // Widget para crear cada una de las 4 opciones
   Widget _tarjetaEstacion(String nombre, IconData icono, Color colorTema) {
     bool esSeleccionado = (temaSeleccionado == nombre);
-
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          temaSeleccionado = nombre;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+      onTap: () => setState(() => temaSeleccionado = nombre),
+      child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF17171C),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: esSeleccionado ? colorTema : Colors.transparent,
-            width: 3,
-          ),
-          boxShadow: esSeleccionado
-              ? [BoxShadow(color: colorTema.withOpacity(0.3), blurRadius: 10)]
-              : [],
+          border: Border.all(color: esSeleccionado ? colorTema : Colors.transparent, width: 3),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icono, size: 48, color: esSeleccionado ? colorTema : Colors.grey),
-            const SizedBox(height: 12),
-            Text(
-              nombre,
-              style: TextStyle(
-                color: esSeleccionado ? Colors.white : Colors.grey,
-                fontWeight: esSeleccionado ? FontWeight.bold : FontWeight.normal,
-                fontSize: 18,
-              ),
-            ),
+            Icon(icono, size: 40, color: esSeleccionado ? colorTema : Colors.grey),
+            const SizedBox(height: 10),
+            Text(nombre, style: TextStyle(color: esSeleccionado ? Colors.white : Colors.grey)),
           ],
         ),
       ),

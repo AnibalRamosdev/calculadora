@@ -1,11 +1,7 @@
-// ==========================================
-// SECCIÓN 1: IMPORTACIONES
-// ==========================================
-import 'package:flutter/material.dart';      // Componentes de interfaz
-import 'package:image_picker/image_picker.dart'; // Para abrir la galería
-import 'dart:io';                             // Para manejar el archivo de imagen
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
-// Clase principal de la pantalla de personalización
 class PantallaPersonalizar extends StatefulWidget {
   const PantallaPersonalizar({super.key});
 
@@ -14,25 +10,19 @@ class PantallaPersonalizar extends StatefulWidget {
 }
 
 class _PantallaPersonalizarState extends State<PantallaPersonalizar> {
-  // Variable para almacenar la imagen seleccionada
   File? _imagenSeleccionada;
   final ImagePicker _picker = ImagePicker();
 
-  // Colores de tu diseño Figma
   final Color _colorFondo = Colors.black;
   final Color _colorAzulFigma = const Color(0xFF4B5EFC);
   final Color _colorTarjeta = const Color(0xFF17171C);
 
-  // FUNCIÓN: Abre la galería y guarda la foto
-  Future<void> _cambiarFondo() async {
+  Future<void> _elegirImagen() async {
     final XFile? imagen = await _picker.pickImage(source: ImageSource.gallery);
-
     if (imagen != null) {
       setState(() {
         _imagenSeleccionada = File(imagen.path);
       });
-      // Aquí podrías añadir una lógica para guardar esta ruta
-      // y que la calculadora la lea (usando SharedPreferences más adelante)
     }
   }
 
@@ -41,64 +31,94 @@ class _PantallaPersonalizarState extends State<PantallaPersonalizar> {
     return Scaffold(
       backgroundColor: _colorFondo,
       appBar: AppBar(
-        title: const Text("Personalización", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Fondo de Pantalla", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text(
-              "Configura el fondo de tu calculadora",
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
+            // ÁREA DE VISTA PREVIA
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: _colorTarjeta,
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Stack( // Stack para poner el botón de borrar encima
+                  alignment: Alignment.center,
+                  children: [
+                    _imagenSeleccionada == null
+                        ? const Text("Sin fondo personalizado", style: TextStyle(color: Colors.grey))
+                        : ClipRRect(
+                      borderRadius: BorderRadius.circular(32),
+                      child: Image.file(_imagenSeleccionada!, fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+                    ),
 
-            // VISTA PREVIA DE LA IMAGEN
-            Container(
-              width: double.infinity,
-              height: 300,
-              decoration: BoxDecoration(
-                color: _colorTarjeta,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: _imagenSeleccionada == null
-                  ? const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.image_outlined, color: Colors.grey, size: 80),
-                  SizedBox(height: 10),
-                  Text("No hay imagen seleccionada", style: TextStyle(color: Colors.grey)),
-                ],
-              )
-                  : ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Image.file(_imagenSeleccionada!, fit: BoxFit.cover),
-              ),
-            ),
-
-            const Spacer(), // Empuja el botón hacia abajo
-
-            // BOTÓN PARA SELECCIONAR
-            SizedBox(
-              width: double.infinity,
-              height: 60,
-              child: ElevatedButton.icon(
-                onPressed: _cambiarFondo,
-                icon: const Icon(Icons.photo_library, color: Colors.white),
-                label: const Text("Elegir de la Galería", style: TextStyle(fontSize: 18, color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _colorAzulFigma,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                    // Botón pequeño para borrar la selección
+                    if (_imagenSeleccionada != null)
+                      Positioned(
+                        top: 20,
+                        right: 20,
+                        child: FloatingActionButton.small(
+                          backgroundColor: Colors.redAccent,
+                          onPressed: () => setState(() => _imagenSeleccionada = null),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 30),
+
+            // BOTONES DE ACCIÓN
+            Column(
+              children: [
+                // Botón Galería
+                _botonPersonalizado(
+                  onPressed: _elegirImagen,
+                  texto: "Cambiar Imagen",
+                  icono: Icons.photo_library,
+                  color: _colorTarjeta,
+                ),
+                const SizedBox(height: 16),
+
+                // Botón Confirmar y Volver
+                _botonPersonalizado(
+                  onPressed: () {
+                    // ENVIAMOS LA IMAGEN DE VUELTA A LA CALCULADORA
+                    Navigator.pop(context, _imagenSeleccionada);
+                  },
+                  texto: "Aplicar Fondo",
+                  icono: Icons.check_circle,
+                  color: _colorAzulFigma,
+                ),
+              ],
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _botonPersonalizado({required VoidCallback onPressed, required String texto, required IconData icono, required Color color}) {
+    return SizedBox(
+      width: double.infinity,
+      height: 60,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icono, color: Colors.white),
+        label: Text(texto, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          elevation: 0,
         ),
       ),
     );
